@@ -27,7 +27,7 @@ object CatsTypeClasses {
   def incrementV2[F[_]: Functor](container: F[Int]):F[Int] =
     container.map(_ + 1)
 
-  // (2) applicative - the ability to wrap types
+  // (2) applicative - the ability to wrap types via pure
   trait MyApplicative[F[_]] extends Functor[F] {
     def pure[A](v: A): F[A]
   }
@@ -49,11 +49,11 @@ object CatsTypeClasses {
 
   import cats.syntax.flatMap.* // flatMap extension method
 
-  // flatMap isn't used explicitly
-  def crossProductAlt[F[_], A, B](fa: F[A], fb: F[B])(using flatMap: FlatMap[F]) =
+  // Generally speaking, flatMap isn't used explicitly
+  def crossProductAlt[F[_], A, B](fa: F[A], fb: F[B])(using flatMap: FlatMap[F]): F[(A, B)] =
     fa.flatMap(a => fb.map(b => (a, b))) // map available via Flatmap
 
-  def crossProduct[F[_]: FlatMap, A, B](fa: F[A], fb: F[B]) =
+  def crossProduct[F[_]: FlatMap, A, B](fa: F[A], fb: F[B]): F[(A, B)] =
     fa.flatMap(a => fb.map(b => (a, b)))
 
   // (4) Monad = applicative + flatmap
@@ -66,7 +66,7 @@ object CatsTypeClasses {
 
   val monadList = Monad[List]
 
-  def crossProduct2[F[_]: Monad, A, B](fa: F[A], fb: F[B]) =
+  def crossProduct2[F[_]: Monad, A, B](fa: F[A], fb: F[B]): F[(A, B)] =
     for {
       a <- fa
       b <- fb
