@@ -21,7 +21,7 @@ object Effects {
   val printSomething: Unit = println("Cats Effect")
   val printSomething_v2: Unit = () // not the same
 
-  // example: changing a variable (impure)
+  // example: changing a variable's value (impure)
   var anInt = 0
   val changingVar: Unit = anInt += 1
   val changingVar_2: Unit = () // not the same
@@ -151,6 +151,78 @@ object Effects {
       _ <- printIt(r1 + r2)
     } yield ()
 
-   program.unsafeRun()
+    // Expansion
+
+    // MyIO(() => StdIn.readLine()).flatMap(
+    //     r1 => MyIO(() => StdIn.readLine()).flatMap(
+    //       r2 => MyIO(() => println(r1 + r2)).map(
+    //         _ => ()
+    // )))
+
+    // case class MyIO[A](unsafeRun: () => A) {
+    //   def map[B](f: A => B): MyIO[B] =
+    //     MyIO(() => f(unsafeRun()))
+    // etc...
+
+    // (1) Map
+
+    // MyIO(() => println(r1 + r2)).map(_ => ())
+
+    // => MyIO(() => { println(r1 + r2) => () })
+
+    // Now have:
+
+    // MyIO(() => StdIn.readLine()).flatMap(
+    //     r1 => MyIO(() => StdIn.readLine()).flatMap(
+    //       r2 => MyIO(() => { println(r1 + r2) => () })
+    // ))
+
+    // (2) flatMap
+
+    //  MyIO(() => StdIn.readLine()).flatMap(r2 => MyIO(() => { println(r1 + r2) => () }))
+    //                                       <------------- lambda --------------------->
+
+    //  def flatMap[B](f: A => MyIO[B]): MyIO[B] =
+    //    MyIO(() => f(unsafeRun()).unsafeRun())
+
+    // Introducing lambda
+
+    //  MyIO(() => StdIn.readLine()).flatMap(lambda))
+
+    // Substituting flatMap
+
+    //  MyIO(() => lambda(StdIn.readLine()).unsafeRun())
+
+    // Substituting lambda
+
+    //  MyIO(() => MyIO(() => { println(r1 + StdIn.readLine()) => () }).unsafeRun())
+
+    //  MyIO(() => { println(r1 + StdIn.readLine()) => () })
+
+    // Now have:
+
+    // MyIO(() => StdIn.readLine()).flatMap(
+    //     r1 => MyIO(() => { println(r1 + StdIn.readLine()) => () })
+    //     <----------------------- lambda ------------------------->
+    // )
+
+    // Just repeat the same substitution - introduce lambda
+
+    // MyIO(() => StdIn.readLine()).flatMap(lambda)
+
+    // Substituting flatMap
+
+    //  def flatMap[B](f: A => MyIO[B]): MyIO[B] =
+    //    MyIO(() => f(unsafeRun()).unsafeRun())
+
+    // MyIO(() => lambda(StdIn.readLine()).unsafeRun())
+
+    // Substituting lambda
+
+    // MyIO(() => MyIO(() => { println(StdIn.readLine() + StdIn.readLine()) => () }).unsafeRun())
+
+    // MyIO(() => { println(StdIn.readLine() + StdIn.readLine()) => () })
+    
+    program.unsafeRun()
   }
 }
