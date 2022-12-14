@@ -4,7 +4,7 @@ import cats.effect.IO
 
 import scala.io.StdIn
 
-object IOIntroduction {
+object L02_IOIntroduction {
   // IO
   val ourFirstIO: IO[Int] = IO.pure(42) // arg should not have side effects (it is evaluated eagerly)
   val aDelayedIO: IO[Int] = IO.delay({

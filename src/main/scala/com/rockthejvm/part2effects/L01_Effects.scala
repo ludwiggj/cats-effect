@@ -3,7 +3,7 @@ package com.rockthejvm.part2effects
 import scala.concurrent.Future
 import scala.io.StdIn
 
-object Effects {
+object L01_Effects {
   // Pure functional programming
   // Expression that produces a value without side effects
   // Substitution
@@ -145,7 +145,7 @@ object Effects {
 
     readIt().unsafeRun()
 
-   val program: MyIO[Unit] = for {
+    val program: MyIO[Unit] = for {
       r1 <- readIt()
       r2 <- readIt()
       _ <- printIt(r1 + r2)
