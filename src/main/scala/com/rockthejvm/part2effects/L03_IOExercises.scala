@@ -71,13 +71,22 @@ object L03_IOExercises extends IOApp.Simple {
   def foreverEager2[A](io: IO[A]): IO[A] =
     io.productR(foreverEager2(io))
 
+  def foreverLazy_v3[A](io: IO[A]): IO[A] =
+    io.foreverM
+
   // Exercise 4 - convert an IO to a different type
   def convert[A, B](ioa: IO[A], value: B): IO[B] =
     ioa.map(_ => value)
 
+  def convert_v2[A, B](ioa: IO[A], value: B): IO[B] =
+    ioa.as(value)
+
   // Exercise 5 - discard value from IO, return unit
   def asUnit[A](ioa: IO[A]): IO[Unit] =
     convert(ioa, ())
+
+  def asUnit_v2[A](ioa: IO[A]): IO[Unit] =
+    ioa.void
 
   // Exercise 6 - fix stack recursion
   def sum(n: Int): Int =
@@ -105,7 +114,7 @@ object L03_IOExercises extends IOApp.Simple {
 
   def sumIO(n: Int): IO[Int] =
     if (n <= 0) IO(0)
-    else IO(n).flatMap(n => sumIO(n - 1).map(acc => n + acc))
+    else IO(n).flatMap(n => sumIO(n - 1).map(acc => n + acc)) // or use for comprehension
 
   def fibonacci(n: Int): BigInt = n match {
     case n if n <= 1 => 0
@@ -124,6 +133,42 @@ object L03_IOExercises extends IOApp.Simple {
     case n => fibonacciIO(n - 2).flatMap(n_2 => fibonacciIO(n - 1).map(n_1 => n_2 + n_1))
   }
 
+  def fibonacciIO_v2(n: Int): IO[BigInt] = n match {
+    case n if n <= 1 => IO(0)
+    case n if n == 2 => IO(1)
+    case n => for {
+      last <- fibonacciIO_v2(n - 1)
+      prev <- fibonacciIO_v2(n - 2)
+    } yield last + prev
+  }
+
+  def fibonacciIO_v3(n: Int): IO[BigInt] = n match {
+    case n if n <= 1 => IO(0)
+    case n if n == 2 => IO(1)
+    case n => for {
+      last <- IO(fibonacciIO_v3(n - 1)).flatMap(x => x)
+      prev <- IO(fibonacciIO_v3(n - 2)).flatMap(x => x)
+    } yield last + prev
+  }
+
+  def fibonacciIO_v4(n: Int): IO[BigInt] = n match {
+    case n if n <= 1 => IO(0)
+    case n if n == 2 => IO(1)
+    case n => for {
+      last <- IO.delay(fibonacciIO_v3(n - 1)).flatten
+      prev <- IO.delay(fibonacciIO_v3(n - 2)).flatten
+    } yield last + prev
+  }
+
+  def fibonacciIO_v5(n: Int): IO[BigInt] = n match {
+    case n if n <= 1 => IO(0)
+    case n if n == 2 => IO(1)
+    case n => for {
+      last <- IO.defer(fibonacciIO_v3(n - 1))
+      prev <- IO.defer(fibonacciIO_v3(n - 2))
+    } yield last + prev
+  }
+
   import cats.implicits.*
 
   def run = {
@@ -140,8 +185,12 @@ object L03_IOExercises extends IOApp.Simple {
       _ <- IO.println(first2)
       converted <- convert(IO("two"), 2)
       _ <- IO.println(converted)
+      converted2 <- convert_v2(IO("two"), 2)
+      _ <- IO.println(converted2)
       discarded <- asUnit(IO("two"))
       _ <- IO.println(discarded)
+      discarded2 <- asUnit_v2(IO("two"))
+      _ <- IO.println(discarded2)
       totes <- sumIO(40000)
       _ <- IO.println(totes)
       fibs = (1 to 20).map(fibonacci)
@@ -150,10 +199,10 @@ object L03_IOExercises extends IOApp.Simple {
       _ <- IO.println(fibs2)
       //      bigFib = fibonacci(75)
       //      _ <- IO.println(bigFib)
-      _ <- foreverEager(IO {
-        println("forever")
-        Thread.sleep(500)
-      })
+//      _ <- foreverEager(IO {
+//        println("forever")
+//        Thread.sleep(500)
+//      })
     } yield ()
   }
 }
@@ -174,9 +223,11 @@ object L03_IOExercises_2 {
 //      Thread.sleep(250)
 //    })
 
-    foreverEager2(IO {
-      println("forevs!")
-      Thread.sleep(250)
-    })
+//    foreverLazy_v3(IO {
+//      println("forevs!")
+//      Thread.sleep(250)
+//    }).unsafeRunSync()
+
+    (1 to 100).foreach(i => println(s"fibonacci($i) = ${fibonacciIO_v3(i).unsafeRunSync()}"))
   }
 }
