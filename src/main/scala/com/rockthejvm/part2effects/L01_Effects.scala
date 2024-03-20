@@ -86,41 +86,70 @@ object L01_Effects {
 
   // (2) An IO which measured duration of a computation
   def measure[A](computation: MyIO[A]): MyIO[Long] = for {
-    startTime <- clock
-    _         <- computation // throw away result
-    endTime   <- clock
-  } yield endTime - startTime
+    startTime  <- clock
+    _          <- computation // throw away result
+    finishTime <- clock
+  } yield finishTime - startTime
 
   // clock.flatMap(startTime => computation.flatMap(_ => clock.map(finishTime => finishTime - startTime)))
+  //                                                     <--------------------------------------------->
 
   // (1) Last term
   //     clock.map(finishTime => finishTime - startTime)
+
+  // Substitute for map method
+  // def map[B](f: A => B): MyIO[B] = MyIO(() => f(unsafeRun()))
+  // def clock = MyIO(() => System.currentTimeMillis())
+
   //  => MyIO(() => clock.unsafeRun() - startTime)
   //  => MyIO(() => System.currentTimeMillis() - startTime)
 
+  // Substituting back in....
+
   // clock.flatMap(startTime => computation.flatMap(_ => MyIO(() => System.currentTimeMillis() - startTime)))
+  //                                                     <------------------------------------------------>
 
-  // (2) Next last term
+  // (2) Next to last term
 
-  // computation.flatMap(lambda) = MyIO(() => lambda(computation).unsafeRun())
+  // clock.flatMap(startTime => computation.flatMap(_ => MyIO(() => System.currentTimeMillis() - startTime)))
+  //                                                <----------------------------------------------------->
 
-  // In this case, lambda is _ => MyIO(() => System.currentTimeMillis() - startTime)
+  // computation.flatMap(lambda)
+  // where
+  // lambda = _ => MyIO(() => System.currentTimeMillis() - startTime)
+
+  // def flatMap[B](f: A => MyIO[B]): MyIO[B] = MyIO(() => f(unsafeRun()).unsafeRun())
+
+  // computation.flatMap(lambda) = MyIO(() => lambda(computation.unsafeRun()).unsafeRun())
+  //                                                 <--------------------->
+  //                                                 Computation is run, result passed in as argument to lambda // now substitute for lambda
 
   //                             = MyIO(() => MyIO(() => System.currentTimeMillis() - startTime).unsafeRun())
+  //                                                                                             <---------> Run this now
 
   //                             = MyIO(() => System.currentTimeMillis()_after_computation() - startTime)
 
-  // (3) Next last time i.e. first term
+  // (3) First term
 
   // clock.flatMap(startTime => MyIO(() => System.currentTimeMillis()_after_computation() - startTime))
+  //               <--------------------------------------------------------------------------------->
 
-  // = MyIO(() => lambda(clock.unsafeRun()).unsafeRun())
+  // clock.flatMap(lambda)
+  // where
+  // lambda = startTime => MyIO(() => System.currentTimeMillis()_after_computation() - startTime)
 
-  // = MyIO(() => lambda(System.currentTimeMillis()).unsafeRun())
+  // clock.flatMap(lambda) = MyIO(() => lambda(clock.unsafeRun()).unsafeRun())
+  //                                           <--------------->
+  //                                            Clock is run, result passed in as argument to lambda
 
-  // = MyIO(() => MyIO(() => System.currentTimeMillis()_after_computation() - System.currentTimeMillis_before_computation()).unsafeRun())
+  //                       = MyIO(() => lambda(System.currentTimeMillis()).unsafeRun())  // substitute for lambda
 
-  // = MyIO(() => System.currentTimeMillis()_after_computation() - System.currentTimeMillis_before_computation()))
+  //                       = MyIO(() => MyIO(() =>
+  //                                      System.currentTimeMillis()_after_computation() -
+  //                                      System.currentTimeMillis_before_computation()
+  //                                     ).unsafeRun())
+
+  //                       = MyIO(() => System.currentTimeMillis()_after_computation() - System.currentTimeMillis_before_computation()))
 
   // (3) An IO which prints something to the console
   def printIt(msg: String): MyIO[Unit] = MyIO(() => println(msg))
@@ -130,7 +159,8 @@ object L01_Effects {
 
   def main(args: Array[String]): Unit = {
     Option[Int]({
-      println("hi"); 2
+      println("hi")
+      2
     })
     anIO.unsafeRun()
 
@@ -222,7 +252,7 @@ object L01_Effects {
     // MyIO(() => MyIO(() => { println(StdIn.readLine() + StdIn.readLine()) => () }).unsafeRun())
 
     // MyIO(() => { println(StdIn.readLine() + StdIn.readLine()) => () })
-    
+
     program.unsafeRun()
   }
 }
