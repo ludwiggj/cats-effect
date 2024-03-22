@@ -10,6 +10,7 @@ object L06_IOParallelism extends IOApp.Simple {
   val firstIO = IO(s"[${Thread.currentThread().getName}] First")
   val secondIO = IO(s"[${Thread.currentThread().getName}] Second")
 
+  // These run on the same thread
   val composedIO = for {
     first <- firstIO
     second <- secondIO
@@ -32,7 +33,7 @@ object L06_IOParallelism extends IOApp.Simple {
   val lifeGoalsParallel2: IO[String] = Parallel[IO].sequential(lifeGoalsParallel)
 
   // Shorthand for all of the above
-  import cats.syntax.parallel.* // for parMapN
+  import cats.syntax.parallel.* // for parMapN, which handles conversions back and forth
   val lifeGoalsParallelShorthand: IO[String] =
     (meaningOfLife.debug, favLang.debug).parMapN((num, string) => s"My shorthand life goals: $num, $string")
 
@@ -55,20 +56,20 @@ object L06_IOParallelism extends IOApp.Simple {
   val twoFailuresDelayed: IO[String] = (IO(Thread.sleep(2000)) >> aFailure.debug, anotherFailure.debug).parMapN(_ + _)
 
   override def run: IO[Unit] = for {
-    _ <- IO.println("Compose two IOs sequentially via for:")
+    _ <- IO.println("> Compose two IOs sequentially via for:")
     _ <- composedIO.map(println)
-    _ <- IO.println("Compose two IOs sequentially via mapN:")
-    _ <- lifeGoals.map(println)
-    _ <- IO.println("Compose two IOs in parallel via mapN:")
+    _ <- IO.println("> Compose two IOs sequentially via mapN:")
+    _ <- lifeGoals
+    _ <- IO.println("> Compose two IOs in parallel via mapN:")
     _ <- lifeGoalsParallel2.debug.void
-    _ <- IO.println("Compose two IOs in parallel via parMapN:")
+    _ <- IO.println("> Compose two IOs in parallel via parMapN:")
     _ <- lifeGoalsParallelShorthand.debug.void
-    _ <- IO.println("Compose success and failure:")
+    _ <- IO.println("> Compose success and failure:")
     // _ <- parallelWithFailure.void // no point debugging output as exception is thrown
     _ <- parallelWithFailure.handleError(ex => s"Oh dear: $ex").debug.void
-    _ <- IO.println("Compose two failures, first fails first:")
+    _ <- IO.println("> Compose two failures, first fails first:")
     _ <- twoFailures.handleError(ex => s"Oh dear: $ex").debug.void
-    _ <- IO.println("Compose two failures, second fails first:")
+    _ <- IO.println("> Compose two failures, second fails first:")
     // Waits until both have completed
     _ <- twoFailuresDelayed.handleError(ex => s"Oh dear: $ex").debug.void
   } yield ()
