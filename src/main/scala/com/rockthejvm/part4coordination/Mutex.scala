@@ -15,7 +15,19 @@ abstract class Mutex {
   def release: IO[Unit]
 }
 
-def taskId(id: Int) = s"[task $id]"
+object MutexUtils {
+  def taskId(id: Int) = s"[task $id]"
+
+  type Signal = Deferred[IO, Unit]
+
+  case class State(locked: Boolean, waiting: Queue[Signal])
+
+  val unlocked = State(false, Queue())
+
+  def createSignal(): IO[Signal] = IO.deferred[Unit]
+}
+
+import MutexUtils.*
 
 object MyMutex {
   def create: IO[Mutex] = for {
@@ -39,14 +51,6 @@ object MyMutex {
         case None => IO.unit
     } yield ()
 }
-
-type Signal = Deferred[IO, Unit]
-
-case class State(locked: Boolean, waiting: Queue[Signal])
-
-val unlocked = State(false, Queue())
-
-def createSignal(): IO[Signal] = IO.deferred[Unit]
 
 object MyTextbookMutex {
   def create: IO[Mutex] = IO.ref(unlocked).map { stateRef =>
@@ -138,6 +142,7 @@ object MutexWithCancellation {
         createSignal().flatMap { signal =>
 
           // remove the signal that the cancelled fiber was waiting on
+          // otherwise when we complete it, that fiber won't release the mutex (since it was cancelled)
           val cleanup = state.modify {
             case State(locked, queue) => (
               State(locked, queue.filterNot(_ eq signal)),
