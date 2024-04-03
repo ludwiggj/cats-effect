@@ -47,8 +47,8 @@ object CancellingIOs extends IOApp.Simple {
   // - input passwrod, can be cancelled, because otherwise we might block indefinitely on user input e.g. user makes a cup of tea
   // - verify password, CANNOT be cancelled once it's started
 
-  val inputPassword = IO("Input password").debug >> IO("typing password").debug >> IO.sleep(2.seconds) >> IO("RockTheJVM1!")
-  val verifyPassword = (pw: String) => IO("Verifying...").debug >> IO.sleep(2.seconds) >> IO(pw == "RockTheJVM1!")
+  val inputPassword = IO("Input password").debug >> IO("typing password").debug >> IO.sleep(5.seconds) >> IO("RockTheJVM1!")
+  val verifyPassword = (pw: String) => IO("Verifying...").debug >> IO.sleep(5.seconds) >> IO(pw == "RockTheJVM1!")
 
   val authFlow: IO[Unit] = IO.uncancelable { poll =>
     for {
@@ -73,7 +73,7 @@ object CancellingIOs extends IOApp.Simple {
 
   val authProgram = for {
     authFib <- authFlow.start
-    _ <- IO.sleep(3.seconds) >> IO("Authentication timed out, attempting cancel...").debug >> authFib.cancel
+    _ <- IO.sleep(1.seconds) >> IO("Authentication timed out, attempting cancel...").debug >> authFib.cancel
     _ <- authFib.join
   } yield ()
 
@@ -134,13 +134,13 @@ object CancellingIOs extends IOApp.Simple {
   }
 
   override def run: IO[Unit] =
-    threeStepProgram(1500.millis)
+  // threeStepProgram(1500.millis)
   // authProgram_v2_cancelVerifyPassword_no_change
   // authProgram_v2_cancelInputPassword_no_change
   // invincibleAuthProgram
   // uncancelableMol.void
   // cancelBeforeMol.void
-  // authProgram_v2_cancelVerifyPassword
+  authProgram_v2_cancelVerifyPassword
   // authProgram_v2_cancelInputPassword
   // authProgram
   // authFlow
