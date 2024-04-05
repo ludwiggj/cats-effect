@@ -48,7 +48,7 @@ object AsyncIOs extends IOApp.Simple {
   def asyncToIO[A](computation: () => A)(ec: ExecutionContext): IO[A] = {
     IO.async_ { (cb: Callback[A]) =>
       ec.execute { () =>
-        val result = Try {computation()}.toEither
+        val result: Either[Throwable, A] = Try {computation()}.toEither
         cb(result)
       }
     }
