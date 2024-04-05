@@ -5,7 +5,7 @@ import cats.effect.{Fiber, IO, IOApp, MonadCancel, Outcome, Spawn}
 import com.rockthejvm.utils.general.*
 import scala.concurrent.duration.*
 
-object PolymorphicFibers extends IOApp.Simple {
+object L2_PolymorphicFibers extends IOApp.Simple {
   val mol = IO(42)
   val fiber: IO[Fiber[IO, Throwable, Int]] = mol.start
 
@@ -119,3 +119,60 @@ object PolymorphicFibers extends IOApp.Simple {
 //    simpleRace(IO.sleep(1.second) >> IO("hello"), IO.sleep(500.millis) >> IO("winner")).debug.void
   simpleRace(IO.sleep(500.millis) >> IO("winner"), IO.sleep(1.second) >> IO("dolly")).debug.void
 }
+
+// Cats & Cats Effect TC type hierarchy:
+/*
+    ____________          _____________          __________       ______________
+   |           |         |            |         |         |      |             |
+   | Semigroup |         |  Foldable  |         | Functor |      | Semigroupal |
+   |  combine  |         |            |         |   map   |      |   product   |
+   |___________|         |____________|         |_________|      |_____________|
+        ^                       ^                 ^     ^               ^
+        |                       |_________________|     |_______________|
+        |                                |                      |
+    ____________                   _____________          ______________
+   |           |                  |            |         |             |
+   |  Monoid   |                  |  Traverse  |         |    Apply    |
+   |  empty    |                  |  traverse  |         |     ap      |
+   |___________|                  |____________|         |_____________|
+                                                               ^
+                                                               |
+                                                    _________________________
+                                                   |                        |
+                                            ______________           ______________
+                                           |             |          |             |
+                                           |   FlatMap   |          | Applicative |
+                                           |   flatMap   |          |    pure     |
+                                           |_____________|          |_____________|
+                                                  ^                      ^  ^
+                                                  |______________________|  |__________
+                                                               |                      |
+                                                           __________         ___________________
+                                                          |         |        |                  |
+                                                          |  Monad  |        | ApplicativeError |
+                                                          |         |        |    raiseError    |
+                                                          |         |        |  handleErrorWith |
+                                                          |_________|        |__________________|
+                                                               ^                     ^
+                                                               |_____________________|
+                                                                         |
+                                                                   _______________
+                                                                  |              |
+                                                                  |  MonadError  |
+                                                                  |    ensure    |
+                                                                  |______________|
+                                                                         |
+                                                                   _______________
+                                                                  |              |
+                                                                  |  MonadCancel |
+                                                                  |   canceled   |
+                                                                  | uncancelable |
+                                                                  |______________|
+                                                                         |
+                                                                   _______________
+                                                                  |              |
+                                                                  |     Spawn    |
+                                                                  |     start    |
+                                                                  |______________|
+
+*/

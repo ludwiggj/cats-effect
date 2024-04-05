@@ -7,7 +7,7 @@ import cats.effect.{GenSpawn, IO, IOApp, Poll}
 
 import scala.concurrent.duration.*
 
-object PolymorphicCancellation extends IOApp.Simple {
+object L1_PolymorphicCancellation extends IOApp.Simple {
   trait MyApplicativeError[F[_], E] extends Applicative[F] {
     def raiseError[A](error: E): F[A]
 
@@ -185,3 +185,54 @@ object PolymorphicCancellation extends IOApp.Simple {
     program
     // authFlow[IO, Throwable]
 }
+
+// Cats & Cats Effect TC type hierarchy:
+/*
+    ____________          _____________          __________       ______________
+   |           |         |            |         |         |      |             |
+   | Semigroup |         |  Foldable  |         | Functor |      | Semigroupal |
+   |  combine  |         |            |         |   map   |      |   product   |
+   |___________|         |____________|         |_________|      |_____________|
+        ^                       ^                 ^     ^               ^
+        |                       |_________________|     |_______________|
+        |                                |                      |
+    ____________                   _____________          ______________
+   |           |                  |            |         |             |
+   |  Monoid   |                  |  Traverse  |         |    Apply    |
+   |  empty    |                  |  traverse  |         |     ap      |
+   |___________|                  |____________|         |_____________|
+                                                               ^
+                                                               |
+                                                    _________________________
+                                                   |                        |
+                                            ______________           ______________
+                                           |             |          |             |
+                                           |   FlatMap   |          | Applicative |
+                                           |   flatMap   |          |    pure     |
+                                           |_____________|          |_____________|
+                                                  ^                      ^  ^
+                                                  |______________________|  |__________
+                                                               |                      |
+                                                           __________         ___________________
+                                                          |         |        |                  |
+                                                          |  Monad  |        | ApplicativeError |
+                                                          |         |        |    raiseError    |
+                                                          |         |        |  handleErrorWith |
+                                                          |_________|        |__________________|
+                                                               ^                     ^
+                                                               |_____________________|
+                                                                         |
+                                                                   _______________
+                                                                  |              |
+                                                                  |  MonadError  |
+                                                                  |    ensure    |
+                                                                  |______________|
+                                                                         |
+                                                                   _______________
+                                                                  |              |
+                                                                  |  MonadCancel |
+                                                                  |   canceled   |
+                                                                  | uncancelable |
+                                                                  |______________|
+
+*/
