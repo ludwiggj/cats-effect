@@ -25,7 +25,7 @@ object L3_PolymorphicCoordination extends IOApp.Simple {
   val aRef = concurrentIO.ref(42)
 
   // capabilities build on top of other typeclasses i.e.
-  // pure, map/flatMap, raiseError, uncancelable, start (fibers), ref, deferred
+  // pure, map/flatMap, raiseError, uncancelable, start (fibers), +ref, +deferred
 
   // Generalise the alarm solution
 
